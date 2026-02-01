@@ -19,6 +19,7 @@ def extract_next_links(url, resp):
 
     if (resp.status != 200):
         print(f"Failed to retrieve the webpage. Status code: {resp.status}")
+        return list()
 
     found_links = list()
 
@@ -31,11 +32,11 @@ def extract_next_links(url, resp):
         href = tag.get("href")
         full_url = urljoin(resp.url, href)
 
-        if is_valid(full_url):
-            # Defragment url
-            parsed = urlparse(url)
-            defragmented_url = urlunparse(parsed._replace(fragment=""))
-            
+        # Defragment url
+        parsed = urlparse(full_url)
+        defragmented_url = urlunparse(parsed._replace(fragment=""))
+
+        if is_valid(defragmented_url):
             found_links.append(defragmented_url)
 
     return found_links
