@@ -2,6 +2,8 @@ import re
 from urllib.parse import urlparse, urljoin, urlunparse
 from bs4 import BeautifulSoup
 
+unique_urls = set()
+
 def scraper(url, resp):
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
@@ -38,7 +40,9 @@ def extract_next_links(url, resp):
 
         if is_valid(defragmented_url):
             found_links.append(defragmented_url)
+            unique_urls.add(defragmented_url)
 
+    print(f"Total unique urls: {len(unique_urls)}")
     return found_links
 
 def is_valid(url):
