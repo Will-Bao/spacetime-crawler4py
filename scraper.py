@@ -1,6 +1,7 @@
 import re
 from urllib.parse import urlparse, urljoin, urlunparse
 from bs4 import BeautifulSoup
+from tokenizer import tokenize
 
 unique_urls = set()
 longest_page = {"url": "", "length": -1}

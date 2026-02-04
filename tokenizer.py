@@ -7,29 +7,23 @@ such as checking for isalnum and isascii, adding characters to the
 cache list, and adding words to the tokens list are all O(1).
 Thus, it simplifies into O(n) (linear) runtime complexity.
 """
-def tokenize(file_path: str) -> list[str]:
-    try:
-        with open(file_path,  "r", encoding='utf-8') as file:
-            content = file.read()
-            tokens = []
+def tokenize(content: str) -> list[str]:
+    tokens = []
+    cache = []
+
+    for char in content:
+        # Parses the file content by character
+        if (char.isalnum() and char.isascii()):
+            cache.append(char.lower())
+        elif cache:
+            tokens.append("".join(cache))
             cache = []
 
-            for char in content:
-                # Parses the file content by character
-                if (char.isalnum() and char.isascii()):
-                    cache.append(char.lower())
-                elif cache:
-                    tokens.append("".join(cache))
-                    cache = []
+    if (cache):
+        # Adds the last token
+        tokens.append("".join(cache))
 
-            if (cache):
-                # Adds the last token
-                tokens.append("".join(cache))
-
-            return tokens
-    except IOError as e:
-        print(f"Unable to open file: {e}")
-        return []
+    return tokens
 
 """
 This computeWordFrequencies function counts the frequency of each token
