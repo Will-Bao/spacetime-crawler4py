@@ -7,21 +7,21 @@ such as checking for isalnum and isascii, adding characters to the
 cache list, and adding words to the tokens list are all O(1).
 Thus, it simplifies into O(n) (linear) runtime complexity.
 """
-def tokenize(content: str) -> list[str]:
+def tokenize(text: str) -> list[str]:
     tokens = []
-    cache = []
+    cache = ''
 
-    for char in content:
+    for char in text:
         # Parses the file content by character
         if (char.isalnum() and char.isascii()):
-            cache.append(char.lower())
+            cache += char.lower()
         elif cache:
-            tokens.append("".join(cache))
+            tokens.append(cache)
             cache = []
 
     if (cache):
         # Adds the last token
-        tokens.append("".join(cache))
+        tokens.append(cache)
 
     return tokens
 
@@ -32,7 +32,7 @@ the list, it either creates a new dictionary entry or increment an
 existing entry to track duplicate tokens. It means the runtime complexity
 for this function grows linearly with the input (O(n)).
 """
-def computeWordFrequencies(tokens: list[str]) -> dict[str: int]:
+def compute_word_frequencies(tokens: list[str]) -> dict[str: int]:
     words = dict()
     for token in tokens:
         if token in words.keys():

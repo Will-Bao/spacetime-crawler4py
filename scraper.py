@@ -1,16 +1,18 @@
 import re
 from urllib.parse import urlparse, urljoin, urlunparse
 from bs4 import BeautifulSoup
-from tokenizer import tokenize
+from tokenizer import tokenize, compute_word_frequencies
 
 unique_urls = set()
 longest_page = {"url": "", "length": -1}
+
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
 
-def extract_next_links(url, resp):
+
+def extract_next_links(url: str, resp):
     # Implementation required.
     # url: the URL that was used to get the page
     # resp.url: the actual url of the page
@@ -27,16 +29,23 @@ def extract_next_links(url, resp):
 
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
 
-    page_text = soup.get_text(separator=" ", strip=True)
-    check_page_length(page_text.split(), resp.url)
+    tokenized_text = []
+    for currentText in soup.stripped_strings:
+        # Gets the current text from a generator that contains the content of the webpage
+        tokenized_text.extend(tokenize(currentText))
 
-    links = get_links(soup, resp.url)
+    word_freq = compute_word_frequencies(tokenized_text)
+    fingerprint = building_simhash(word_freq)
+    check_page_length(len(tokenized_text), resp.url)
+
+    links = get_links(soup, resp.url, fingerprint)
 
     print(f"Total unique urls: {len(unique_urls)}")
     print(f"Longest page: {longest_page['url']} - {longest_page['length']} Words")
     return links
 
-def get_links(soup, url):
+
+def get_links(soup: BeautifulSoup, url: str, fingerprint: int):
     # Retrieves the links on the web page.
     found_links = list()
     extracted_links = soup.find_all("a", href=True)
@@ -56,14 +65,19 @@ def get_links(soup, url):
         
     return found_links
 
-def check_page_length(content, url):
-    # Checks and updates longest page
-    page_length = len(content)
-    if page_length > longest_page["length"]:
-        longest_page["url"] = url
-        longest_page["length"] = page_length
 
-def is_valid(url):
+def building_simhash(word_freq: dict[str: int]) -> int:
+    pass
+
+
+def check_page_length(length: int, url: str):
+    # Checks and updates longest page
+    if length > longest_page["length"]:
+        longest_page["url"] = url
+        longest_page["length"] = length
+
+
+def is_valid(url: str):
     # Decide whether to crawl this url or not. 
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
