@@ -2,6 +2,9 @@ import re
 from urllib.parse import urlparse, urljoin, urlunparse
 from bs4 import BeautifulSoup
 from tokenizer import tokenize, compute_word_frequencies
+from hashlib import blake2b
+
+HASH_SIZE = 64
 
 unique_urls = set()
 longest_page = {"url": "", "length": -1}
@@ -67,7 +70,24 @@ def get_links(soup: BeautifulSoup, url: str, fingerprint: int):
 
 
 def building_simhash(word_freq: dict[str: int]) -> int:
-    pass
+
+    identifier_list = [0] * HASH_SIZE
+
+    for word in word_freq.keys():
+        hash_code = int(blake2b(word).hexdigest(), 16)
+        for power in range(HASH_SIZE):
+            hash_bit = hash_code & pow(2, power)
+            if hash_bit == 0:
+                identifier_list[HASH_SIZE - power - 1] -= word_freq[word]
+            elif hash_bit == 1:
+                identifier_list[HASH_SIZE - power - 1] += word_freq[word]
+    
+    identifier_code = 0
+    for ith_bit in range(1, HASH_SIZE + 1):
+        identifier_code += identifier_list[HASH_SIZE - ith_bit] * pow(10, ith_bit)
+
+    return identifier_code
+
 
 
 def check_page_length(length: int, url: str):
