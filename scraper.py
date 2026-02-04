@@ -23,16 +23,23 @@ def extract_next_links(url, resp):
         print(f"Failed to retrieve the webpage. Status code: {resp.status}")
         return list()
 
-    found_links = list()
-
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
 
+    page_text = soup.get_text(separator=" ", strip=True)
+    links = get_links(soup, resp.url)
+
+    print(f"Total unique urls: {len(unique_urls)}")
+    return links
+
+def get_links(soup, url):
+    # Retrieves the links on the web page.
+    found_links = list()
     extracted_links = soup.find_all("a", href=True)
 
     for tag in extracted_links:
         # Convert to full url
         href = tag.get("href")
-        full_url = urljoin(resp.url, href)
+        full_url = urljoin(url, href)
 
         # Defragment url
         parsed = urlparse(full_url)
@@ -41,8 +48,7 @@ def extract_next_links(url, resp):
         if is_valid(defragmented_url):
             found_links.append(defragmented_url)
             unique_urls.add(defragmented_url)
-
-    print(f"Total unique urls: {len(unique_urls)}")
+        
     return found_links
 
 def is_valid(url):
