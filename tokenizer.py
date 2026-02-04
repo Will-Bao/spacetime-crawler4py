@@ -65,7 +65,7 @@ def main():
         print("At least 1 file names required.")
         return
 
-    print_tokens(computeWordFrequencies(tokenize(sys.argv[1])))
+    print_tokens(compute_word_frequencies(tokenize(sys.argv[1])))
 
 
 if __name__ == '__main__':
