@@ -3,6 +3,7 @@ from urllib.parse import urlparse, urljoin, urlunparse
 from bs4 import BeautifulSoup
 
 unique_urls = set()
+longest_page = {"url": "", "length": -1}
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -26,9 +27,12 @@ def extract_next_links(url, resp):
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
 
     page_text = soup.get_text(separator=" ", strip=True)
+    check_page_length(page_text.split(), resp.url)
+
     links = get_links(soup, resp.url)
 
     print(f"Total unique urls: {len(unique_urls)}")
+    print(f"Longest page: {longest_page['url']} - {longest_page['length']} Words")
     return links
 
 def get_links(soup, url):
@@ -50,6 +54,13 @@ def get_links(soup, url):
             unique_urls.add(defragmented_url)
         
     return found_links
+
+def check_page_length(content, url):
+    # Checks and updates longest page
+    page_length = len(content)
+    if page_length > longest_page["length"]:
+        longest_page["url"] = url
+        longest_page["length"] = page_length
 
 def is_valid(url):
     # Decide whether to crawl this url or not. 
