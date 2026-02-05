@@ -17,7 +17,7 @@ def tokenize(text: str) -> list[str]:
             cache += char.lower()
         elif cache:
             tokens.append(cache)
-            cache = []
+            cache = ''
 
     if (cache):
         # Adds the last token
