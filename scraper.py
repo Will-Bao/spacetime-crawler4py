@@ -2,11 +2,12 @@ import re
 from urllib.parse import urlparse, urljoin, urlunparse
 from bs4 import BeautifulSoup
 from tokenizer import tokenize, compute_word_frequencies
-from hashlib import blake2b
 
-HASH_SIZE = 64
+MAX_VISIT = 4
 
-unique_urls = set()
+blackList_host = {"swiki.ics.uci.edu", "calendar.ics.uci.edu"}
+blacklist_url = set()
+unique_urls = dict() # dictionary of keys: url and value: visit_counter
 longest_page = {"url": "", "length": -1}
 common_words = dict()
 report_file = "report.txt"
@@ -39,13 +40,10 @@ def extract_next_links(url: str, resp):
         # Gets the current text from a generator that contains the content of the webpage
         tokenized_text.extend(tokenize(currentText))
 
-    common_words = compute_word_frequencies(tokenized_text, common_words)
-    fingerprint = building_simhash(common_words)
-
+    word_freq = compute_word_frequencies(tokenized_text)
     check_page_length(len(tokenized_text), resp.url)
 
-    links = get_links(soup, resp.url, fingerprint)
-    unique_urls.update(links)
+    links = get_links(soup, resp.url)
 
     update_report(unique_urls, longest_page, common_words)
     print(f"Total unique urls: {len(unique_urls)}")
@@ -53,7 +51,7 @@ def extract_next_links(url: str, resp):
     return links
 
 
-def get_links(soup: BeautifulSoup, url: str, fingerprint: int):
+def get_links(soup: BeautifulSoup, url: str):
     # Retrieves the links on the web page.
     found_links = list()
     extracted_links = soup.find_all("a", href=True)
@@ -67,31 +65,18 @@ def get_links(soup: BeautifulSoup, url: str, fingerprint: int):
         parsed = urlparse(full_url)
         defragmented_url = urlunparse(parsed._replace(fragment=""))
 
+        # checks if defragmented URL is valid
         if is_valid(defragmented_url):
             found_links.append(defragmented_url)
+
+            if defragmented_url not in unique_urls.keys():
+                unique_urls.update(defragmented_url, 1)
+            else:
+                unique_urls[defragmented_url] += 1
+                if unique_urls[defragmented_url] <= MAX_VISIT:
+                    blacklist_url.add(defragmented_url)
         
     return found_links
-
-
-def building_simhash(word_freq: dict[str, int]) -> int:
-    identifier_list = [0] * HASH_SIZE
-
-    for word, freq in word_freq.items():
-        hash_code = int(blake2b(word.encode("utf-8")).hexdigest(), 16)
-
-        for power in range(HASH_SIZE):
-            if hash_code & (1 << power):
-                identifier_list[HASH_SIZE - power - 1] += freq
-            else:
-                identifier_list[HASH_SIZE - power - 1] -= freq
-
-    identifier_code = 0
-    for i in range(HASH_SIZE):
-        if identifier_list[i] > 0:
-            identifier_code |= (1 << (HASH_SIZE - i - 1))
-
-    return identifier_code
-
 
 
 def check_page_length(length: int, url: str):
@@ -112,7 +97,7 @@ def is_valid(url: str):
     # There are already some conditions that return False.
     try:
         parsed = urlparse(url)
-        if parsed.scheme not in set(["http", "https"]):
+        if parsed.scheme not in set(["http", "https"]) or is_crawler_trap(url, parsed.hostname):
             return False
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
@@ -127,3 +112,7 @@ def is_valid(url: str):
     except TypeError:
         print ("TypeError for ", parsed)
         raise
+
+
+def is_crawler_trap(url: str, hostname: str):
+    return hostname in blackList_host or url in blacklist_url
