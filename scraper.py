@@ -4,12 +4,14 @@ from bs4 import BeautifulSoup
 from tokenizer import tokenize, compute_word_frequencies
 
 MAX_VISIT = 4
+COMMON_WORDS_COUNT = 50
 
 blackList_host = {"swiki.ics.uci.edu", "calendar.ics.uci.edu"}
 blacklist_url = set()
 unique_urls = dict() # dictionary of keys: url and value: visit_counter
 longest_page = {"url": "", "length": -1}
 common_words = dict()
+subdomain_page_count = dict()
 report_file = "report.txt"
 
 
@@ -40,20 +42,21 @@ def extract_next_links(url: str, resp):
         # Gets the current text from a generator that contains the content of the webpage
         tokenized_text.extend(tokenize(currentText))
 
-    word_freq = compute_word_frequencies(tokenized_text)
     check_page_length(len(tokenized_text), resp.url)
+
+    compute_word_frequencies(tokenized_text, common_words)
+    word_frequencies = sorted(common_words.items(), key=lambda x: x[1], reverse=True)
 
     links = get_links(soup, resp.url)
 
-    update_report(unique_urls, longest_page, common_words)
-    print(f"Total unique urls: {len(unique_urls)}")
-    print(f"Longest page: {longest_page['url']} - {longest_page['length']} Words")
-    return links
+    increment_subdomain_count(resp.url, 1, subdomain_page_count)
 
+    update_report(unique_urls, longest_page, word_frequencies, subdomain_page_count)
+    return links
 
 def get_links(soup: BeautifulSoup, url: str):
     # Retrieves the links on the web page.
-    found_links = list()
+    found_links = set()
     extracted_links = soup.find_all("a", href=True)
 
     for tag in extracted_links:
@@ -67,16 +70,16 @@ def get_links(soup: BeautifulSoup, url: str):
 
         # checks if defragmented URL is valid
         if is_valid(defragmented_url):
-            found_links.append(defragmented_url)
+            found_links.add(defragmented_url)
 
             if defragmented_url not in unique_urls.keys():
-                unique_urls.update(defragmented_url, 1)
+                unique_urls[defragmented_url] = 1
             else:
                 unique_urls[defragmented_url] += 1
-                if unique_urls[defragmented_url] <= MAX_VISIT:
+                if unique_urls[defragmented_url] > MAX_VISIT:
                     blacklist_url.add(defragmented_url)
         
-    return found_links
+    return list(found_links)
 
 
 def check_page_length(length: int, url: str):
@@ -85,11 +88,28 @@ def check_page_length(length: int, url: str):
         longest_page["url"] = url
         longest_page["length"] = length
 
-def update_report(unique_urls, longest_page):
+def increment_subdomain_count(current_url: str, url_count,
+                              current_subdomains: dict[str: int]) -> dict[str: int]:
+    parsed = urlparse(current_url)
+    subdomain = parsed.netloc.lower()
+
+    if subdomain in current_subdomains.keys():
+        current_subdomains[subdomain] += url_count
+    else:
+        current_subdomains[subdomain] = url_count
+    return current_subdomains
+
+def update_report(unique_urls, longest_page, words, subdomain_counts):
     with open(report_file, "w", encoding="utf-8") as f:
         f.write("Crawler Report\n")
         f.write(f"Total unique URLs: {len(unique_urls)}\n")
         f.write(f"Longest page: {longest_page['url']} - {longest_page['length']} Words\n")
+        f.write("Common Words:\n")
+        for word, count in words[:COMMON_WORDS_COUNT]:
+            f.write(f"{word} {count}\n")
+        f.write("Subdomain Counts:\n")
+        for subdomain, count in subdomain_counts.items():
+            f.write(f"{subdomain} : {count}\n")
 
 def is_valid(url: str):
     # Decide whether to crawl this url or not. 
@@ -97,7 +117,7 @@ def is_valid(url: str):
     # There are already some conditions that return False.
     try:
         parsed = urlparse(url)
-        if parsed.scheme not in set(["http", "https"]) or is_crawler_trap(url, parsed.hostname):
+        if parsed.scheme not in set(["http", "https"]): #or is_crawler_trap(url, parsed.hostname):
             return False
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
