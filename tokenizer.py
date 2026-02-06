@@ -32,14 +32,13 @@ the list, it either creates a new dictionary entry or increment an
 existing entry to track duplicate tokens. It means the runtime complexity
 for this function grows linearly with the input (O(n)).
 """
-def compute_word_frequencies(tokens: list[str]) -> dict[str: int]:
-    words = dict()
+def compute_word_frequencies(tokens: list[str], current_words: dict[str: int]) -> dict[str: int]:
     for token in tokens:
-        if token in words.keys():
-            words[token] += 1
+        if token in current_words.keys():
+            current_words[token] += 1
         else:
-            words[token] = 1
-    return words
+            current_words[token] = 1
+    return current_words
 
 """
 This print_tokens method utilizes the items() method to retrieve n values

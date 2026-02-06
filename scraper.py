@@ -8,6 +8,8 @@ HASH_SIZE = 64
 
 unique_urls = set()
 longest_page = {"url": "", "length": -1}
+common_words = dict()
+report_file = "report.txt"
 
 
 def scraper(url, resp):
@@ -37,12 +39,15 @@ def extract_next_links(url: str, resp):
         # Gets the current text from a generator that contains the content of the webpage
         tokenized_text.extend(tokenize(currentText))
 
-    word_freq = compute_word_frequencies(tokenized_text)
-    fingerprint = building_simhash(word_freq)
+    common_words = compute_word_frequencies(tokenized_text, common_words)
+    fingerprint = building_simhash(common_words)
+
     check_page_length(len(tokenized_text), resp.url)
 
     links = get_links(soup, resp.url, fingerprint)
+    unique_urls.update(links)
 
+    update_report(unique_urls, longest_page, common_words)
     print(f"Total unique urls: {len(unique_urls)}")
     print(f"Longest page: {longest_page['url']} - {longest_page['length']} Words")
     return links
@@ -64,27 +69,26 @@ def get_links(soup: BeautifulSoup, url: str, fingerprint: int):
 
         if is_valid(defragmented_url):
             found_links.append(defragmented_url)
-            unique_urls.add(defragmented_url)
         
     return found_links
 
 
-def building_simhash(word_freq: dict[str: int]) -> int:
-
+def building_simhash(word_freq: dict[str, int]) -> int:
     identifier_list = [0] * HASH_SIZE
 
-    for word in word_freq.keys():
-        hash_code = int(blake2b(word).hexdigest(), 16)
+    for word, freq in word_freq.items():
+        hash_code = int(blake2b(word.encode("utf-8")).hexdigest(), 16)
+
         for power in range(HASH_SIZE):
-            hash_bit = hash_code & pow(2, power)
-            if hash_bit == 0:
-                identifier_list[HASH_SIZE - power - 1] -= word_freq[word]
-            elif hash_bit == 1:
-                identifier_list[HASH_SIZE - power - 1] += word_freq[word]
-    
+            if hash_code & (1 << power):
+                identifier_list[HASH_SIZE - power - 1] += freq
+            else:
+                identifier_list[HASH_SIZE - power - 1] -= freq
+
     identifier_code = 0
-    for ith_bit in range(1, HASH_SIZE + 1):
-        identifier_code += identifier_list[HASH_SIZE - ith_bit] * pow(10, ith_bit)
+    for i in range(HASH_SIZE):
+        if identifier_list[i] > 0:
+            identifier_code |= (1 << (HASH_SIZE - i - 1))
 
     return identifier_code
 
@@ -96,6 +100,11 @@ def check_page_length(length: int, url: str):
         longest_page["url"] = url
         longest_page["length"] = length
 
+def update_report(unique_urls, longest_page):
+    with open(report_file, "w", encoding="utf-8") as f:
+        f.write("Crawler Report\n")
+        f.write(f"Total unique URLs: {len(unique_urls)}\n")
+        f.write(f"Longest page: {longest_page['url']} - {longest_page['length']} Words\n")
 
 def is_valid(url: str):
     # Decide whether to crawl this url or not. 
