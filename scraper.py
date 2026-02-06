@@ -2,11 +2,12 @@ import re
 from urllib.parse import urlparse, urljoin, urlunparse
 from bs4 import BeautifulSoup
 from tokenizer import tokenize, compute_word_frequencies
-from hashlib import blake2b
 
-HASH_SIZE = 64
+MAX_VISIT = 4
 
-unique_urls = set()
+blackList_host = {"swiki.ics.uci.edu", "calendar.ics.uci.edu"}
+blacklist_url = set()
+unique_urls = dict() # dictionary of keys: url and value: visit_counter
 longest_page = {"url": "", "length": -1}
 
 
@@ -38,17 +39,16 @@ def extract_next_links(url: str, resp):
         tokenized_text.extend(tokenize(currentText))
 
     word_freq = compute_word_frequencies(tokenized_text)
-    fingerprint = building_simhash(word_freq)
     check_page_length(len(tokenized_text), resp.url)
 
-    links = get_links(soup, resp.url, fingerprint)
+    links = get_links(soup, resp.url)
 
     print(f"Total unique urls: {len(unique_urls)}")
     print(f"Longest page: {longest_page['url']} - {longest_page['length']} Words")
     return links
 
 
-def get_links(soup: BeautifulSoup, url: str, fingerprint: int):
+def get_links(soup: BeautifulSoup, url: str):
     # Retrieves the links on the web page.
     found_links = list()
     extracted_links = soup.find_all("a", href=True)
@@ -62,32 +62,18 @@ def get_links(soup: BeautifulSoup, url: str, fingerprint: int):
         parsed = urlparse(full_url)
         defragmented_url = urlunparse(parsed._replace(fragment=""))
 
+        # checks if defragmented URL is valid
         if is_valid(defragmented_url):
             found_links.append(defragmented_url)
-            unique_urls.add(defragmented_url)
+
+            if defragmented_url not in unique_urls.keys():
+                unique_urls.update(defragmented_url, 1)
+            else:
+                unique_urls[defragmented_url] += 1
+                if unique_urls[defragmented_url] <= MAX_VISIT:
+                    blacklist_url.add(defragmented_url)
         
     return found_links
-
-
-def building_simhash(word_freq: dict[str: int]) -> int:
-
-    identifier_list = [0] * HASH_SIZE
-
-    for word in word_freq.keys():
-        hash_code = int(blake2b(word).hexdigest(), 16)
-        for power in range(HASH_SIZE):
-            hash_bit = hash_code & pow(2, power)
-            if hash_bit == 0:
-                identifier_list[HASH_SIZE - power - 1] -= word_freq[word]
-            elif hash_bit == 1:
-                identifier_list[HASH_SIZE - power - 1] += word_freq[word]
-    
-    identifier_code = 0
-    for ith_bit in range(1, HASH_SIZE + 1):
-        identifier_code += identifier_list[HASH_SIZE - ith_bit] * pow(10, ith_bit)
-
-    return identifier_code
-
 
 
 def check_page_length(length: int, url: str):
@@ -103,7 +89,7 @@ def is_valid(url: str):
     # There are already some conditions that return False.
     try:
         parsed = urlparse(url)
-        if parsed.scheme not in set(["http", "https"]):
+        if parsed.scheme not in set(["http", "https"]) or is_crawler_trap(url, parsed.hostname):
             return False
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
@@ -118,3 +104,7 @@ def is_valid(url: str):
     except TypeError:
         print ("TypeError for ", parsed)
         raise
+
+
+def is_crawler_trap(url: str, hostname: str):
+    return hostname in blackList_host or url in blacklist_url
