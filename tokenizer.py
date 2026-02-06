@@ -1,5 +1,27 @@
 import sys
 
+STOP_WORDS = {
+    "a", "about", "above", "after", "again", "against", "all", "am",
+    "an", "and", "any", "are", "aren", "as", "at", "be", "because",
+    "been", "before", "being", "below", "between", "both", "but", "by",
+    "cannot", "could", "couldn", "did", "didn", "do",
+    "does", "doesn", "doing", "don", "down", "during", "each",
+    "few", "for", "from", "further", "had", "hadnt", "has", "hasn",
+    "have", "haven", "having", "he", "hed", "hell", "hes", "her",
+    "here", "hers", "herself", "him", "himself", "his",
+    "how", "hows", "i", "d", "ll", "m", "ve", "if", "in", "t"
+    "into", "is", "isn", "it", "s", "itself", "lets",
+    "me", "more", "most", "mustn", "my", "myself", "no", "nor",
+    "not", "of", "off", "on", "once", "only", "or", "other", "ought",
+    "our", "ours", "ourselves", "out", "over", "own", "same", "shan",
+    "she", "should", "shouldnt", "so", "some", "such", "than", "that", "the", "their",
+    "them", "themselves", "then", "there", "these", "they", "this", "those",
+    "through", "to", "too", "under", "until", "up", "very", "was",
+    "wasn", "we", "were", "weren", "what", "when", "where",
+    "which", "while", "who", "whom", "why", "with",
+    "would", "wouldn", "you", "your", "yours", "yourself", "yourselves",
+}
+
 """
 This tokenize function parses the input by looping through n characters
 from the input file. The operations it's performing on each characters,
@@ -34,6 +56,8 @@ for this function grows linearly with the input (O(n)).
 """
 def compute_word_frequencies(tokens: list[str], current_words: dict[str: int]) -> dict[str: int]:
     for token in tokens:
+        if token in STOP_WORDS:
+            continue
         if token in current_words.keys():
             current_words[token] += 1
         else:

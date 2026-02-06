@@ -6,7 +6,7 @@ from tokenizer import tokenize, compute_word_frequencies
 MAX_VISIT = 4
 COMMON_WORDS_COUNT = 50
 
-blackList_host = {"swiki.ics.uci.edu", "calendar.ics.uci.edu"}
+blackList_host = {"swiki.ics.uci.edu", "calendar.ics.uci.edu", "ngs.ics.uci.edu"}
 blacklist_url = set()
 unique_urls = dict() # dictionary of keys: url and value: visit_counter
 longest_page = {"url": "", "length": -1}
@@ -45,13 +45,13 @@ def extract_next_links(url: str, resp):
     check_page_length(len(tokenized_text), resp.url)
 
     compute_word_frequencies(tokenized_text, common_words)
-    word_frequencies = sorted(common_words.items(), key=lambda x: x[1], reverse=True)
+    sorted_frequencies = sorted(common_words.items(), key=lambda x: x[1], reverse=True)
 
     links = get_links(soup, resp.url)
 
     increment_subdomain_count(resp.url, 1, subdomain_page_count)
 
-    update_report(unique_urls, longest_page, word_frequencies, subdomain_page_count)
+    update_report(unique_urls, longest_page, sorted_frequencies, subdomain_page_count)
     return links
 
 def get_links(soup: BeautifulSoup, url: str):
@@ -117,7 +117,7 @@ def is_valid(url: str):
     # There are already some conditions that return False.
     try:
         parsed = urlparse(url)
-        if parsed.scheme not in set(["http", "https"]): #or is_crawler_trap(url, parsed.hostname):
+        if parsed.scheme not in set(["http", "https"]) or is_crawler_trap(url, parsed.hostname):
             return False
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
