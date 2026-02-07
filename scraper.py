@@ -2,7 +2,7 @@ import re
 from urllib.parse import urlparse, urljoin, urlunparse
 from bs4 import BeautifulSoup
 from tokenizer import tokenize, compute_word_frequencies
-from scrapper_helper import add_url_to_blacklist
+from scrapper_helper import url_blacklist_check
 
 COMMON_WORDS_COUNT = 50
 MAX_PAGE_SIZE = 2000000
@@ -36,7 +36,7 @@ def extract_next_links(url: str, resp):
     if not (can_extract(resp)):
         return list()
     
-    add_url_to_blacklist(url, blacklist_url, unique_urls)
+    url_blacklist_check(url, blacklist_url, unique_urls)
 
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
 
