@@ -1,4 +1,5 @@
 import re
+import threading
 from urllib.parse import urlparse, urljoin, urlunparse
 from bs4 import BeautifulSoup
 from tokenizer import tokenize, compute_word_frequencies
@@ -16,7 +17,7 @@ longest_page = {"url": "", "length": -1}
 common_words = dict()
 subdomain_page_count = dict()
 report_file = "report.txt"
-
+data_lock = threading.Lock()
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -55,6 +56,12 @@ def extract_next_links(url: str, resp):
     increment_subdomain_count(resp.url, subdomain_page_count)
 
     update_report(unique_urls, longest_page, sorted_frequencies, subdomain_page_count)
+
+    with data_lock:
+        check_page_length(len(tokenized_text), resp.url)
+        compute_word_frequencies(tokenized_text, common_words)
+        store_url(url, blacklist_url, unique_urls)
+        increment_subdomain_count(resp.urlm, subdomain_page_count)
     return links
 
 
