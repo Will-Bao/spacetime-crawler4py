@@ -17,7 +17,9 @@ longest_page = {"url": "", "length": -1}
 common_words = dict()
 subdomain_page_count = dict()
 report_file = "report.txt"
+
 data_lock = threading.Lock()
+url_count = 0
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -34,7 +36,7 @@ def extract_next_links(url: str, resp):
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
-
+    global url_count
     if not (can_extract(resp)):
         return list()
 
@@ -45,23 +47,18 @@ def extract_next_links(url: str, resp):
         # Gets the current text from a generator that contains the content of the webpage
         tokenized_text.extend(tokenize(currentText))
 
-    check_page_length(len(tokenized_text), resp.url)
-
-    compute_word_frequencies(tokenized_text, common_words)
-    sorted_frequencies = sorted(common_words.items(), key=lambda x: x[1], reverse=True)
-
     links = get_links(soup, resp.url)
 
-    store_url(url, blacklist_url, unique_urls)
-    increment_subdomain_count(resp.url, subdomain_page_count)
-
-    update_report(unique_urls, longest_page, sorted_frequencies, subdomain_page_count)
-
     with data_lock:
+        url_count += 1
         check_page_length(len(tokenized_text), resp.url)
         compute_word_frequencies(tokenized_text, common_words)
         store_url(url, blacklist_url, unique_urls)
-        increment_subdomain_count(resp.urlm, subdomain_page_count)
+        increment_subdomain_count(resp.url, subdomain_page_count)
+        
+        if url_count % 10 == 0:
+            sorted_frequencies = sorted(common_words.items(), key = lambda x: x[1], reverse = True)
+            update_report(unique_urls, longest_page, sorted_frequencies, subdomain_page_count)
     return links
 
 
