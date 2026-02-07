@@ -9,7 +9,7 @@ MAX_PAGE_SIZE = 2000000
 
 blackList_host = {"swiki.ics.uci.edu", "calendar.ics.uci.edu", "ngs.ics.uci.edu", "grape.ics.uci.edu", "isg.ics.uci.edu", 
                   "intranet.ics.uci.edu", "wics.ics.uci.edu", "wiki.ics.uci.edu", "cs.jhu.edu", "www.physics.uci.edu"}
-blacklist_path = {"/~eppstein/pix/"}
+blacklist_path = {"/~eppstein/pix/", "/events/category/institute-seminars/"}
 blacklist_url = set()
 unique_urls = dict() # dictionary of keys: url and value: visit_counter
 longest_page = {"url": "", "length": -1}
@@ -57,6 +57,7 @@ def extract_next_links(url: str, resp):
     update_report(unique_urls, longest_page, sorted_frequencies, subdomain_page_count)
     return links
 
+
 def get_links(soup: BeautifulSoup, url: str):
     # Retrieves the links on the web page.
     found_links = set()
@@ -84,6 +85,7 @@ def check_page_length(length: int, url: str):
         longest_page["url"] = url
         longest_page["length"] = length
 
+
 def increment_subdomain_count(current_url: str,
                               current_subdomains: dict[str: int]) -> dict[str: int]:
     parsed = urlparse(current_url)
@@ -107,6 +109,7 @@ def update_report(unique_urls, longest_page, words, subdomain_counts):
         for subdomain, count in subdomain_counts.items():
             f.write(f"{subdomain}, {count}\n")
 
+
 def is_valid(url: str):
     # Decide whether to crawl this url or not. 
     # If you decide to crawl it, return True; otherwise return False.
@@ -129,6 +132,7 @@ def is_valid(url: str):
         print ("TypeError for ", parsed)
         raise
 
+
 def is_crawler_trap(url: str, parsed_url) -> bool:
     for p in blacklist_path:
         # Checks for blacklisted path values
@@ -139,11 +143,13 @@ def is_crawler_trap(url: str, parsed_url) -> bool:
     return (parsed_url.hostname in blackList_host
             or url in blacklist_url)
 
+
 def is_too_large(resp) -> bool:
     length = resp.raw_response.headers.get("Content-Length")
     if length is None:
         return False
     return int(length) > MAX_PAGE_SIZE
+
 
 def can_extract(resp) -> bool:
     if resp.status != 200:
