@@ -5,6 +5,7 @@ from tokenizer import tokenize, compute_word_frequencies
 
 MAX_VISIT = 4
 COMMON_WORDS_COUNT = 50
+MAX_PAGE_SIZE = 2000000
 
 blackList_host = {"swiki.ics.uci.edu", "calendar.ics.uci.edu", "ngs.ics.uci.edu", "grape.ics.uci.edu", "isg.ics.uci.edu"}
 blacklist_url = set()
@@ -31,11 +32,7 @@ def extract_next_links(url: str, resp):
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
 
-    if (resp.status != 200 or len(resp.raw_response.content) == 0):
-        if (len(resp.raw_response.content) == 0):
-            print("No data found, skipping page.")
-        else:
-            print(f"Failed to retrieve the webpage: {resp.error}. Status code: {resp.status}")
+    if not (can_extract(resp)):
         return list()
 
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
@@ -137,5 +134,26 @@ def is_valid(url: str):
         raise
 
 
-def is_crawler_trap(url: str, hostname: str):
+def is_crawler_trap(url: str, hostname: str) -> bool:
     return hostname in blackList_host or url in blacklist_url
+
+def is_too_large(resp) -> bool:
+    length = resp.raw_response.headers.get("Content-Length")
+    if length is None:
+        return False
+    return int(length) > MAX_PAGE_SIZE
+
+def can_extract(resp) -> bool:
+    if resp.status != 200:
+        print(f"Failed to retrieve the webpage: {resp.error}. Status code: {resp.status}")
+        return False
+
+    if not resp.raw_response.content:
+        print("No data found, skipping page.")
+        return False
+
+    if is_too_large(resp):
+        print("Page too large, skipping.")
+        return False
+    
+    return True
