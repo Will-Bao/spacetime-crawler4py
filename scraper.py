@@ -6,7 +6,7 @@ from tokenizer import tokenize, compute_word_frequencies
 MAX_VISIT = 4
 COMMON_WORDS_COUNT = 50
 
-blackList_host = {"swiki.ics.uci.edu", "calendar.ics.uci.edu", "ngs.ics.uci.edu", "grape.ics.uci.edu"}
+blackList_host = {"swiki.ics.uci.edu", "calendar.ics.uci.edu", "ngs.ics.uci.edu", "grape.ics.uci.edu", "isg.ics.uci.edu"}
 blacklist_url = set()
 unique_urls = dict() # dictionary of keys: url and value: visit_counter
 longest_page = {"url": "", "length": -1}
@@ -31,8 +31,11 @@ def extract_next_links(url: str, resp):
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
 
-    if (resp.status != 200):
-        print(f"Failed to retrieve the webpage. Status code: {resp.status}")
+    if (resp.status != 200 or len(resp.raw_response.content) == 0):
+        if (len(resp.raw_response.content) == 0):
+            print("No data found, skipping page.")
+        else:
+            print(f"Failed to retrieve the webpage: {resp.error}. Status code: {resp.status}")
         return list()
 
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
