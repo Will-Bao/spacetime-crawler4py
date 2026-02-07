@@ -2,12 +2,12 @@ import re
 from urllib.parse import urlparse, urljoin, urlunparse
 from bs4 import BeautifulSoup
 from tokenizer import tokenize, compute_word_frequencies
+from scrapper_helper import add_url_to_blacklist
 
-MAX_VISIT = 4
 COMMON_WORDS_COUNT = 50
 MAX_PAGE_SIZE = 2000000
 
-blackList_host = {"swiki.ics.uci.edu", "calendar.ics.uci.edu", "ngs.ics.uci.edu", "grape.ics.uci.edu", "isg.ics.uci.edu"}
+blackList_host = {"swiki.ics.uci.edu", "calendar.ics.uci.edu", "ngs.ics.uci.edu", "grape.ics.uci.edu", "isg.ics.uci.edu", "intranet.ics.uci.edu "}
 blacklist_url = set()
 unique_urls = dict() # dictionary of keys: url and value: visit_counter
 longest_page = {"url": "", "length": -1}
@@ -34,6 +34,8 @@ def extract_next_links(url: str, resp):
 
     if not (can_extract(resp)):
         return list()
+    
+    add_url_to_blacklist(url, blacklist_url, unique_urls)
 
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
 
@@ -71,13 +73,6 @@ def get_links(soup: BeautifulSoup, url: str):
         # checks if defragmented URL is valid
         if is_valid(defragmented_url):
             found_links.add(defragmented_url)
-
-            if defragmented_url not in unique_urls.keys():
-                unique_urls[defragmented_url] = 1
-            else:
-                unique_urls[defragmented_url] += 1
-                if unique_urls[defragmented_url] > MAX_VISIT:
-                    blacklist_url.add(defragmented_url)
         
     return list(found_links)
 
@@ -132,7 +127,6 @@ def is_valid(url: str):
     except TypeError:
         print ("TypeError for ", parsed)
         raise
-
 
 def is_crawler_trap(url: str, hostname: str) -> bool:
     return hostname in blackList_host or url in blacklist_url
