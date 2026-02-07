@@ -2,7 +2,7 @@ import re
 from urllib.parse import urlparse, urljoin, urlunparse
 from bs4 import BeautifulSoup
 from tokenizer import tokenize, compute_word_frequencies
-from scrapper_helper import url_blacklist_check
+from scrapper_helper import store_url
 
 COMMON_WORDS_COUNT = 50
 MAX_PAGE_SIZE = 2000000
@@ -36,7 +36,7 @@ def extract_next_links(url: str, resp):
     if not (can_extract(resp)):
         return list()
     
-    url_blacklist_check(url, blacklist_url, unique_urls)
+    store_url(url, blacklist_url, unique_urls)
 
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
 
@@ -52,7 +52,7 @@ def extract_next_links(url: str, resp):
 
     links = get_links(soup, resp.url)
 
-    increment_subdomain_count(resp.url, 1, subdomain_page_count)
+    increment_subdomain_count(resp.url, subdomain_page_count)
 
     update_report(unique_urls, longest_page, sorted_frequencies, subdomain_page_count)
     return links
@@ -84,15 +84,15 @@ def check_page_length(length: int, url: str):
         longest_page["url"] = url
         longest_page["length"] = length
 
-def increment_subdomain_count(current_url: str, url_count,
+def increment_subdomain_count(current_url: str,
                               current_subdomains: dict[str: int]) -> dict[str: int]:
     parsed = urlparse(current_url)
     subdomain = parsed.netloc.lower()
 
     if subdomain in current_subdomains.keys():
-        current_subdomains[subdomain] += url_count
+        current_subdomains[subdomain] += 1
     else:
-        current_subdomains[subdomain] = url_count
+        current_subdomains[subdomain] = 1
     return current_subdomains
 
 def update_report(unique_urls, longest_page, words, subdomain_counts):
