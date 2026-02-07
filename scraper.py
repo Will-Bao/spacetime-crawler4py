@@ -6,7 +6,7 @@ from tokenizer import tokenize, compute_word_frequencies
 MAX_VISIT = 4
 COMMON_WORDS_COUNT = 50
 
-blackList_host = {"swiki.ics.uci.edu", "calendar.ics.uci.edu", "ngs.ics.uci.edu"}
+blackList_host = {"swiki.ics.uci.edu", "calendar.ics.uci.edu", "ngs.ics.uci.edu", "grape.ics.uci.edu"}
 blacklist_url = set()
 unique_urls = dict() # dictionary of keys: url and value: visit_counter
 longest_page = {"url": "", "length": -1}
@@ -104,10 +104,10 @@ def update_report(unique_urls, longest_page, words, subdomain_counts):
         f.write("Crawler Report\n")
         f.write(f"Total unique URLs: {len(unique_urls)}\n")
         f.write(f"Longest page: {longest_page['url']} - {longest_page['length']} Words\n")
-        f.write("Common Words:\n")
+        f.write("\nCommon Words:\n")
         for word, count in words[:COMMON_WORDS_COUNT]:
             f.write(f"{word} {count}\n")
-        f.write("Subdomain Counts:\n")
+        f.write("\nSubdomain Counts:\n")
         for subdomain, count in subdomain_counts.items():
             f.write(f"{subdomain} : {count}\n")
 
