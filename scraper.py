@@ -2,13 +2,14 @@ import re
 from urllib.parse import urlparse, urljoin, urlunparse
 from bs4 import BeautifulSoup
 from tokenizer import tokenize, compute_word_frequencies
-from scrapper_helper import add_url_to_blacklist
+from scrapper_helper import store_url
 
 COMMON_WORDS_COUNT = 50
 MAX_PAGE_SIZE = 2000000
 
 blackList_host = {"swiki.ics.uci.edu", "calendar.ics.uci.edu", "ngs.ics.uci.edu", "grape.ics.uci.edu", "isg.ics.uci.edu", 
                   "intranet.ics.uci.edu", "wics.ics.uci.edu", "wiki.ics.uci.edu", "cs.jhu.edu", "www.physics.uci.edu"}
+blacklist_path = {"/~eppstein/pix/"}
 blacklist_url = set()
 unique_urls = dict() # dictionary of keys: url and value: visit_counter
 longest_page = {"url": "", "length": -1}
@@ -35,8 +36,6 @@ def extract_next_links(url: str, resp):
 
     if not (can_extract(resp)):
         return list()
-    
-    add_url_to_blacklist(url, blacklist_url, unique_urls)
 
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
 
@@ -52,7 +51,8 @@ def extract_next_links(url: str, resp):
 
     links = get_links(soup, resp.url)
 
-    increment_subdomain_count(resp.url, 1, subdomain_page_count)
+    store_url(url, blacklist_url, unique_urls)
+    increment_subdomain_count(resp.url, subdomain_page_count)
 
     update_report(unique_urls, longest_page, sorted_frequencies, subdomain_page_count)
     return links
@@ -84,28 +84,28 @@ def check_page_length(length: int, url: str):
         longest_page["url"] = url
         longest_page["length"] = length
 
-def increment_subdomain_count(current_url: str, url_count,
+def increment_subdomain_count(current_url: str,
                               current_subdomains: dict[str: int]) -> dict[str: int]:
     parsed = urlparse(current_url)
     subdomain = parsed.netloc.lower()
 
     if subdomain in current_subdomains.keys():
-        current_subdomains[subdomain] += url_count
+        current_subdomains[subdomain] += 1
     else:
-        current_subdomains[subdomain] = url_count
+        current_subdomains[subdomain] = 1
     return current_subdomains
 
 def update_report(unique_urls, longest_page, words, subdomain_counts):
     with open(report_file, "w", encoding="utf-8") as f:
         f.write("Crawler Report\n")
         f.write(f"Total unique URLs: {len(unique_urls)}\n")
-        f.write(f"Longest page: {longest_page['url']} - {longest_page['length']} Words\n")
+        f.write(f"Longest page: {longest_page['url']} : {longest_page['length']} Words\n")
         f.write("\nCommon Words:\n")
         for word, count in words[:COMMON_WORDS_COUNT]:
             f.write(f"{word} {count}\n")
         f.write("\nSubdomain Counts:\n")
         for subdomain, count in subdomain_counts.items():
-            f.write(f"{subdomain} : {count}\n")
+            f.write(f"{subdomain}, {count}\n")
 
 def is_valid(url: str):
     # Decide whether to crawl this url or not. 
@@ -113,7 +113,7 @@ def is_valid(url: str):
     # There are already some conditions that return False.
     try:
         parsed = urlparse(url)
-        if parsed.scheme not in set(["http", "https"]) or is_crawler_trap(url, parsed.hostname):
+        if parsed.scheme not in set(["http", "https"]) or is_crawler_trap(url, parsed):
             return False
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
@@ -129,8 +129,15 @@ def is_valid(url: str):
         print ("TypeError for ", parsed)
         raise
 
-def is_crawler_trap(url: str, hostname: str) -> bool:
-    return hostname in blackList_host or url in blacklist_url
+def is_crawler_trap(url: str, parsed_url) -> bool:
+    for p in blacklist_path:
+        # Checks for blacklisted path values
+        if parsed_url.path.lower().startswith(p):
+            return True
+
+    # Checks for blacklisted urls
+    return (parsed_url.hostname in blackList_host
+            or url in blacklist_url)
 
 def is_too_large(resp) -> bool:
     length = resp.raw_response.headers.get("Content-Length")
