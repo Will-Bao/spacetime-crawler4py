@@ -35,8 +35,6 @@ def extract_next_links(url: str, resp):
 
     if not (can_extract(resp)):
         return list()
-    
-    store_url(url, blacklist_url, unique_urls)
 
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
 
@@ -52,6 +50,7 @@ def extract_next_links(url: str, resp):
 
     links = get_links(soup, resp.url)
 
+    store_url(url, blacklist_url, unique_urls)
     increment_subdomain_count(resp.url, subdomain_page_count)
 
     update_report(unique_urls, longest_page, sorted_frequencies, subdomain_page_count)
@@ -99,7 +98,7 @@ def update_report(unique_urls, longest_page, words, subdomain_counts):
     with open(report_file, "w", encoding="utf-8") as f:
         f.write("Crawler Report\n")
         f.write(f"Total unique URLs: {len(unique_urls)}\n")
-        f.write(f"Longest page: {longest_page['url']} - {longest_page['length']} Words\n")
+        f.write(f"Longest page: {longest_page['url']}, {longest_page['length']} Words\n")
         f.write("\nCommon Words:\n")
         for word, count in words[:COMMON_WORDS_COUNT]:
             f.write(f"{word} {count}\n")
