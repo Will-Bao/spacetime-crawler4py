@@ -49,17 +49,17 @@ def extract_next_links(url: str, resp):
         token_values = tokenize(currentText)
         tokenized_text.extend(token_values[0])
         file_sum += token_values[1]
-
-    if file_sum in check_sums:
-        print("This is a duplicate of a pre-existing URL.")
-        return list()
-    else:
-        check_sums.append(file_sum)
         
 
     links = get_links(soup, resp.url)
 
     with data_lock:
+        if file_sum in check_sums:
+            print("This is a duplicate of a pre-existing URL.")
+            return list()
+        else:
+            check_sums.append(file_sum)
+
         check_page_length(len(tokenized_text), resp.url)
         compute_word_frequencies(tokenized_text, common_words)
         store_url(url, blacklist_url, unique_urls)
