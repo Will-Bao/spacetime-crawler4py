@@ -10,7 +10,7 @@ MAX_PAGE_SIZE = 2000000
 
 blackList_host = {"swiki.ics.uci.edu", "calendar.ics.uci.edu", "ngs.ics.uci.edu", "grape.ics.uci.edu", "isg.ics.uci.edu", 
                   "intranet.ics.uci.edu", "wics.ics.uci.edu", "wiki.ics.uci.edu", "www.cs.jhu.edu", "cs.jhu.edu", "www.physics.uci.edu",
-                  "doi.org", "dx.doi.org", "arxiv.org", "ieeexplore.ieee.org", "www.cs.cmu.edu", "cs.cmu.edu"}
+                  "doi.org", "dx.doi.org", "arxiv.org", "ieeexplore.ieee.org", "www.cs.cmu.edu", "cs.cmu.edu", "rawcdn.githack.com"}
 blacklist_path = {"/~eppstein/pix/", "/events/category/institute-seminars/"}
 blacklist_url = set()
 unique_urls = dict() # dictionary of keys: url and value: visit_counter
