@@ -59,9 +59,9 @@ for this function grows linearly with the input (O(n)).
 """
 def compute_word_frequencies(tokens: list[str], current_words: dict[str: int]) -> dict[str: int]:
     for token in tokens:
-        if token in STOP_WORDS:
-            continue
-        if len(token) == 1 and 'a' <= token <= 'z':
+        if (token in STOP_WORDS
+            or len(token) == 1
+            or token.isdigit()):
             continue
         if token in current_words.keys():
             current_words[token] += 1
