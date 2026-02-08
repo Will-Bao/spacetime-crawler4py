@@ -16,6 +16,7 @@ blacklist_url = set()
 unique_urls = dict() # dictionary of keys: url and value: visit_counter
 longest_page = {"url": "", "length": -1}
 common_words = dict()
+check_sums = []
 subdomain_page_count = dict()
 report_file = "report.txt"
 
@@ -41,10 +42,20 @@ def extract_next_links(url: str, resp):
 
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
 
+    file_sum = 0
     tokenized_text = []
     for currentText in soup.stripped_strings:
         # Gets the current text from a generator that contains the content of the webpage
-        tokenized_text.extend(tokenize(currentText))
+        token_values = tokenize(currentText)
+        tokenized_text.extend(token_values[0])
+        file_sum += token_values[1]
+
+    if file_sum in check_sums:
+        print("This is a duplicate of a pre-existing URL.")
+        return list()
+    else:
+        check_sums.append(file_sum)
+        
 
     links = get_links(soup, resp.url)
 

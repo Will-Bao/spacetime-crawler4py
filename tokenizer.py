@@ -24,19 +24,22 @@ STOP_WORDS = {
 
 """
 This tokenize function parses the input by looping through n characters
-from the input file. The operations it's performing on each characters,
+from the input file. It also calculates the check sum value of the line's tokens, The operations its performing on each characters,
 such as checking for isalnum and isascii, adding characters to the
-cache list, and adding words to the tokens list are all O(1).
+cache list, and adding words to the tokens list are all O(1). 
 Thus, it simplifies into O(n) (linear) runtime complexity.
 """
-def tokenize(text: str) -> list[str]:
+def tokenize(text: str) -> tuple[list[str], int]:
     tokens = []
     cache = ''
+
+    check_sum = 0
 
     for char in text:
         # Parses the file content by character
         if (char.isalnum() and char.isascii()):
             cache += char.lower()
+            check_sum += ord(char.lower())
         elif cache:
             tokens.append(cache)
             cache = ''
@@ -45,7 +48,7 @@ def tokenize(text: str) -> list[str]:
         # Adds the last token
         tokens.append(cache)
 
-    return tokens
+    return (tokens, check_sum)
 
 """
 This computeWordFrequencies function counts the frequency of each token
@@ -90,7 +93,7 @@ def main():
         print("At least 1 file names required.")
         return
 
-    print_tokens(compute_word_frequencies(tokenize(sys.argv[1])))
+    print_tokens(compute_word_frequencies(tokenize(sys.argv[1])[0]))
 
 
 if __name__ == '__main__':
