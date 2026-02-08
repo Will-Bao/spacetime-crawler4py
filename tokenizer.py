@@ -7,9 +7,9 @@ STOP_WORDS = {
     "cannot", "could", "couldn", "did", "didn", "do",
     "does", "doesn", "doing", "don", "down", "during", "each",
     "few", "for", "from", "further", "had", "hadnt", "has", "hasn",
-    "have", "haven", "having", "he", "hed", "hell", "hes", "her",
+    "have", "haven", "having", "he", "her",
     "here", "hers", "herself", "him", "himself", "his",
-    "how", "hows", "i", "d", "ll", "m", "ve", "if", "in", "t"
+    "how", "hows", "i", "d", "ll", "m", "ve", "if", "in", "t",
     "into", "is", "isn", "it", "s", "itself", "lets",
     "me", "more", "most", "mustn", "my", "myself", "no", "nor",
     "not", "of", "off", "on", "once", "only", "or", "other", "ought",
@@ -57,6 +57,8 @@ for this function grows linearly with the input (O(n)).
 def compute_word_frequencies(tokens: list[str], current_words: dict[str: int]) -> dict[str: int]:
     for token in tokens:
         if token in STOP_WORDS:
+            continue
+        if len(token) == 1 and 'a' <= token <= 'z':
             continue
         if token in current_words.keys():
             current_words[token] += 1
