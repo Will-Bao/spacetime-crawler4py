@@ -68,33 +68,3 @@ def compute_word_frequencies(tokens: list[str], current_words: dict[str: int]) -
         else:
             current_words[token] = 1
     return current_words
-
-"""
-This print_tokens method utilizes the items() method to retrieve n values
-from the provided dictionary, which is O(n) time complexity. It also uses
-the sorted() method that has O(nlog(n)) time complexity to sort the dictionary
-in descending order. Finally, printing all the tokens will have O(n) time
-complexity for n items in the dictionary. Therefore, the time complexity of
-this function adds to O(nlog(n)) (linearithmic time).
-"""
-def print_tokens(frequencies: dict[str: int]):
-    token_values = frequencies.items()
-    # Sort tokens in decending order by their frequency in the second index of the tuple
-    sorted_tokens = sorted(token_values, key=lambda x: x[1], reverse=True)
-    for word, amount in sorted_tokens:
-        print(word, amount)
-
-"""
-The runtime complexity for main is O(n^3 log(n)) because it utilizes the
-three previous functions, which combines their time complexity.
-"""
-def main():
-    if (len(sys.argv) < 1):
-        print("At least 1 file names required.")
-        return
-
-    print_tokens(compute_word_frequencies(tokenize(sys.argv[1])[0]))
-
-
-if __name__ == '__main__':
-    main()
